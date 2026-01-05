@@ -18,6 +18,9 @@ current_frame = None
 motion_detected = False
 last_capture_time = 0
 capture_cooldown = 2  # Thời gian chờ giữa các lần chụp ảnh (giây)
+motion_window_start = 0  # Thời điểm bắt đầu cửa sổ 5 giây
+motion_window_duration = 5  # Thời gian cửa sổ chụp ảnh (giây)
+motion_window_active = False  # Có đang trong cửa sổ chụp ảnh không
 frame_lock = threading.Lock()
 
 
@@ -25,7 +28,7 @@ def generate_frames():
     """
     Generator function để streaming video frames
     """
-    global current_frame, motion_detected, last_capture_time
+    global current_frame, motion_detected, last_capture_time, motion_window_start, motion_window_active
     
     while True:
         with frame_lock:
@@ -44,13 +47,36 @@ def generate_frames():
         # Phát hiện chuyển động
         if motion_detector:
             has_motion, processed_frame, contours = motion_detector.detect(frame)
-            
-            # Lưu ảnh nếu phát hiện chuyển động và đã qua thời gian cooldown
             current_time = time.time()
-            if has_motion and (current_time - last_capture_time) > capture_cooldown:
-                filepath = motion_detector.save_capture(processed_frame)
-                print(f"Image saved: {filepath}")
-                last_capture_time = current_time
+            
+            # Logic chụp ảnh trong cửa sổ 5 giây
+            if has_motion:
+                # Nếu chưa có cửa sổ hoạt động, bắt đầu cửa sổ mới
+                if not motion_window_active:
+                    motion_window_start = current_time
+                    motion_window_active = True
+                    print(f"Bắt đầu cửa sổ chụp ảnh 5 giây...")
+                
+                # Kiểm tra xem còn trong cửa sổ 5 giây không
+                time_in_window = current_time - motion_window_start
+                if time_in_window <= motion_window_duration:
+                    # Trong cửa sổ 5 giây, chụp ảnh nếu đã qua cooldown
+                    if (current_time - last_capture_time) > capture_cooldown:
+                        filepath = motion_detector.save_capture(processed_frame)
+                        print(f"Image saved: {filepath} (trong cửa sổ {time_in_window:.1f}s)")
+                        last_capture_time = current_time
+                else:
+                    # Đã hết 5 giây, đóng cửa sổ
+                    motion_window_active = False
+                    print(f"Đã hết cửa sổ 5 giây, không chụp ảnh nữa")
+            else:
+                # Không có chuyển động
+                if motion_window_active:
+                    # Kiểm tra xem đã hết 5 giây chưa
+                    time_in_window = current_time - motion_window_start
+                    if time_in_window > motion_window_duration:
+                        motion_window_active = False
+                        print(f"Đã hết cửa sổ 5 giây, không có chuyển động, dừng chụp ảnh")
             
             # Cập nhật global variables
             with frame_lock:
