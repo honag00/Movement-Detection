@@ -19,7 +19,9 @@ GAUSSIAN_BLUR = (21, 21)  # Kích thước blur để làm mịn
 ACCUM_WEIGHT = 0.5  # Trọng số cho background accumulator
 
 # File paths
-CAPTURES_DIR = os.path.join(BASE_DIR, "captures")  # Thư mục lưu ảnh khi phát hiện chuyển động
+# Lưu ảnh vào thư mục Pictures/demo_camera (Windows) hoặc Pictures/demo_camera (Linux/Raspberry Pi)
+PICTURES_DIR = os.path.join(os.path.expanduser("~"), "Pictures")
+CAPTURES_DIR = os.path.join(PICTURES_DIR, "demo_camera")  # Thư mục lưu ảnh khi phát hiện chuyển động
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 

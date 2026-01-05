@@ -27,11 +27,23 @@ Một dự án IoT sử dụng Computer Vision để giám sát và phát hiện
 
 ## 🚀 Cài đặt
 
-### 1. Clone repository
+### 1. Clone repository hoặc copy code lên Raspberry Pi
 
+**Nếu có Git trên Raspberry Pi:**
 ```bash
 git clone <repository-url>
-cd camera-project
+cd movement_detector
+```
+
+**Nếu không có Git, copy code từ máy Windows:**
+```bash
+# Trên máy Windows, sử dụng SCP hoặc SFTP để copy code
+# Ví dụ với WinSCP, FileZilla, hoặc PowerShell:
+scp -r C:\Users\USER\Desktop\movement_detector pi@<IP_RASPBERRY_PI>:~/movement_detector
+
+# Sau đó SSH vào Raspberry Pi:
+ssh pi@<IP_RASPBERRY_PI>
+cd ~/movement_detector
 ```
 
 ### 2. Cài đặt tự động (Khuyến nghị)
@@ -45,6 +57,17 @@ cd camera-project
 ```cmd
 .dev\setup.bat
 ```
+
+**Raspberry Pi 3 (Linux):**
+```bash
+# Cấp quyền thực thi cho script
+chmod +x setup_pi.sh
+
+# Chạy script cài đặt
+./setup_pi.sh
+```
+
+> **Lưu ý cho Raspberry Pi:** Script sẽ tự động cài đặt tất cả dependencies hệ thống cần thiết cho OpenCV, bao gồm các thư viện camera và xử lý hình ảnh.
 
 ### 3. Cài đặt thủ công
 
@@ -100,6 +123,8 @@ FRAME_HEIGHT = 480
 ### 2. Chạy ứng dụng
 
 **Cách 1: Sử dụng script (Khuyến nghị)**
+
+**Windows:**
 ```powershell
 # PowerShell
 .\.dev\run.ps1
@@ -108,11 +133,20 @@ FRAME_HEIGHT = 480
 .dev\run.bat
 ```
 
+**Raspberry Pi 3:**
+```bash
+# Cấp quyền thực thi
+chmod +x run_pi.sh
+
+# Chạy ứng dụng
+./run_pi.sh
+```
+
 **Cách 2: Chạy thủ công**
 ```bash
 # Kích hoạt virtual environment
 .venv\Scripts\activate  # Windows
-source .venv/bin/activate  # Linux/Mac
+source .venv/bin/activate  # Linux/Mac/Raspberry Pi
 
 # Chạy ứng dụng
 python app.py
@@ -129,6 +163,10 @@ Các thông số có thể tùy chỉnh trong `src/config.py`:
 
 ### Camera Settings
 - `CAMERA_INDEX`: Index của camera (0, 1, 2...)
+  - **Windows**: Thường là 0 cho webcam mặc định
+  - **Raspberry Pi**: 
+    - 0 cho USB camera
+    - Nếu dùng Raspberry Pi Camera Module, có thể cần sử dụng `picamera2` library (xem phần Raspberry Pi bên dưới)
 - `FRAME_WIDTH`: Chiều rộng frame (pixels)
 - `FRAME_HEIGHT`: Chiều cao frame (pixels)
 - `FPS`: Frames per second
@@ -146,13 +184,14 @@ Các thông số có thể tùy chỉnh trong `src/config.py`:
 ## 📁 Cấu trúc dự án
 
 ```
-camera-project/
+movement_detector/
 ├── app.py                 # Flask application chính
 ├── requirements.txt       # Python dependencies
 ├── README.md             # Tài liệu dự án
 ├── LICENSE               # Giấy phép
-├── .gitignore           # Git ignore file
-├── .dev/                # Development tools & scripts
+├── setup_pi.sh           # Setup script cho Raspberry Pi
+├── run_pi.sh             # Run script cho Raspberry Pi
+├── .dev/                # Development tools & scripts (Windows)
 │   ├── setup.ps1        # Setup script (PowerShell)
 │   ├── setup.bat        # Setup script (CMD)
 │   ├── run.ps1          # Run script (PowerShell)
@@ -190,9 +229,115 @@ camera-project/
 - **Học tập** - Dự án thực hành Computer Vision và IoT
 - **Portfolio** - Dự án demo kỹ năng lập trình
 
+## 🍓 Hướng dẫn cho Raspberry Pi 3
+
+### Chuẩn bị
+
+1. **Cài đặt Raspberry Pi OS** (Raspberry Pi OS Lite hoặc Desktop)
+2. **Kết nối camera:**
+   - USB Camera: Cắm vào cổng USB
+   - Raspberry Pi Camera Module: Kết nối vào cổng CSI
+3. **Kết nối mạng:** Đảm bảo Raspberry Pi đã kết nối WiFi hoặc Ethernet
+
+### Các bước triển khai
+
+1. **Copy code lên Raspberry Pi:**
+   ```bash
+   # Từ máy Windows, sử dụng SCP
+   scp -r C:\Users\USER\Desktop\movement_detector pi@<IP_RASPBERRY_PI>:~/
+   
+   # Hoặc sử dụng USB drive, Git, hoặc các công cụ khác
+   ```
+
+2. **SSH vào Raspberry Pi:**
+   ```bash
+   ssh pi@<IP_RASPBERRY_PI>
+   # Mật khẩu mặc định thường là "raspberry"
+   ```
+
+3. **Chạy script cài đặt:**
+   ```bash
+   cd ~/movement_detector
+   chmod +x setup_pi.sh
+   ./setup_pi.sh
+   ```
+   
+   Script sẽ tự động:
+   - Cài đặt Python3 và pip3 (nếu chưa có)
+   - Cài đặt các dependencies hệ thống cho OpenCV
+   - Tạo virtual environment
+   - Cài đặt Python packages
+   - Tạo thư mục lưu ảnh
+
+4. **Cấu hình camera (nếu cần):**
+   ```bash
+   # Mở file config
+   nano src/config.py
+   
+   # Thay đổi CAMERA_INDEX nếu camera không ở index 0
+   # Kiểm tra camera có sẵn:
+   ls -l /dev/video*
+   ```
+
+5. **Chạy ứng dụng:**
+   ```bash
+   chmod +x run_pi.sh
+   ./run_pi.sh
+   ```
+
+6. **Truy cập từ máy khác:**
+   - Từ trình duyệt: `http://<IP_RASPBERRY_PI>:5000`
+   - Tìm IP của Raspberry Pi: `hostname -I`
+
+### Chạy tự động khi khởi động (Tùy chọn)
+
+Để ứng dụng tự động chạy khi Raspberry Pi khởi động:
+
+1. **Tạo systemd service:**
+   ```bash
+   sudo nano /etc/systemd/system/motion-detector.service
+   ```
+
+2. **Thêm nội dung sau:**
+   ```ini
+   [Unit]
+   Description=Motion Detector Camera Service
+   After=network.target
+
+   [Service]
+   Type=simple
+   User=pi
+   WorkingDirectory=/home/pi/movement_detector
+   ExecStart=/home/pi/movement_detector/.venv/bin/python3 /home/pi/movement_detector/app.py
+   Restart=always
+   RestartSec=10
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+3. **Kích hoạt service:**
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable motion-detector.service
+   sudo systemctl start motion-detector.service
+   ```
+
+4. **Kiểm tra trạng thái:**
+   ```bash
+   sudo systemctl status motion-detector.service
+   ```
+
+### Lưu ý cho Raspberry Pi
+
+- **Hiệu năng:** Raspberry Pi 3 có thể xử lý tốt với độ phân giải 640x480. Nếu muốn tăng độ phân giải, có thể cần giảm FPS.
+- **Nhiệt độ:** Đảm bảo Raspberry Pi có tản nhiệt tốt khi chạy liên tục.
+- **Nguồn điện:** Sử dụng nguồn 5V 2.5A trở lên để đảm bảo ổn định.
+- **Camera Module:** Nếu dùng Raspberry Pi Camera Module (không phải USB), có thể cần điều chỉnh code để sử dụng `picamera2` thay vì OpenCV VideoCapture.
+
 ## 📝 Ghi chú
 
-- Ảnh được tự động lưu vào thư mục `captures/` khi phát hiện chuyển động
+- Ảnh được tự động lưu vào thư mục `~/Pictures/demo_camera/` (Linux/Raspberry Pi) hoặc `Pictures/demo_camera/` (Windows) khi phát hiện chuyển động
 - Có cooldown 2 giây giữa các lần chụp ảnh để tránh spam
 - Hệ thống sử dụng Background Subtraction để phát hiện chuyển động, cần thời gian khởi động để học background
 
@@ -208,8 +353,8 @@ Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 
 **Your Name**
 
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Email: your.email@example.com
+- GitHub: [@honag00](https://github.com/honag00)
+- Email: djhoangnguyen2003@gmail.com
 
 ---
 
